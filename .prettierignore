@@ -1,0 +1,19 @@
+# Generated or third-party output
+node_modules
+.next
+out
+build
+coverage
+src/generated
+test-results
+playwright-report
+blob-report
+next-env.d.ts
+package-lock.json
+
+# SQL migrations are applied as written; don't reformat them
+prisma/migrations
+
+# Binary assets
+public/covers
+docs/screenshots

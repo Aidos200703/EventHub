@@ -1,0 +1,18 @@
+# Local PostgreSQL for EventHub. Port 5433 avoids clashing with a locally installed Postgres.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: eventhub
+      POSTGRES_PASSWORD: eventhub
+      POSTGRES_DB: eventhub
+    ports:
+      - "5433:5432"
+    volumes:
+      - eventhub-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventhub"]
+      interval: 5s
+      retries: 10
+volumes:
+  eventhub-db:
