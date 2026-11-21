@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * EventHub design tokens.
+ * Warm light surfaces + graphite blocks + one loud lime accent.
+ * `.surface-dark` re-maps the same tokens, so any component placed on a graphite
+ * block (hero, footer, organizer sidebar) adapts without extra variants.
+ */
+:root {
+  --background: #f3f2ee;
+  --foreground: #141414;
+  --card: #ffffff;
+  --card-foreground: #141414;
+  --popover: #ffffff;
+  --popover-foreground: #141414;
+  --primary: #17181a;
+  --primary-foreground: #f6f6f2;
+  --secondary: #e9e8e2;
+  --secondary-foreground: #141414;
+  --muted: #e9e8e2;
+  --muted-foreground: #5c5d60;
+  --accent: #c8f53c;
+  --accent-foreground: #101010;
+  --destructive: #c8321e;
+  --destructive-foreground: #ffffff;
+  --success: #1f7a3f;
+  --warning: #9a5b00;
+  --border: #dcdbd4;
+  --input: #cfcec7;
+  --ring: #141414;
+  --graphite: #17181a;
+  --graphite-2: #202124;
+  --graphite-3: #2c2e32;
+  --lime: #c8f53c;
+  --lime-strong: #b4e21f;
+  --radius: 0.875rem;
+}
+
+.surface-dark {
+  --background: #17181a;
+  --foreground: #f3f2ee;
+  --card: #202124;
+  --card-foreground: #f3f2ee;
+  --popover: #202124;
+  --popover-foreground: #f3f2ee;
+  --primary: #c8f53c;
+  --primary-foreground: #101010;
+  --secondary: #2c2e32;
+  --secondary-foreground: #f3f2ee;
+  --muted: #2c2e32;
+  --muted-foreground: #a6a7aa;
+  --border: #34363b;
+  --input: #3d3f44;
+  --ring: #c8f53c;
+  color: var(--foreground);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-graphite: var(--graphite);
+  --color-graphite-2: var(--graphite-2);
+  --color-graphite-3: var(--graphite-3);
+  --color-lime: var(--lime);
+  --color-lime-strong: var(--lime-strong);
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-geist), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-marquee: marquee 40s linear infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--lime);
+    color: #101010;
+  }
+  /* One consistent, highly visible keyboard focus style everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 88rem;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2.5rem;
+  }
+}
+
+/* Ticket stub perforation used on ticket pages */
+@utility ticket-notch {
+  mask:
+    radial-gradient(circle 14px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 14px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+}
