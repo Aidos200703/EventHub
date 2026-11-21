@@ -1,0 +1,276 @@
+// EventHub data model.
+// Auth tables (User/Session/Account/Verification) follow the Better Auth core schema.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  VISITOR
+  ORGANIZER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum Category {
+  CONCERT
+  FESTIVAL
+  THEATRE
+  STANDUP
+  CONFERENCE
+  SPORT
+  EXHIBITION
+  WORKSHOP
+  KIDS
+}
+
+enum OrderStatus {
+  PAID
+  CANCELLED
+}
+
+enum TicketStatus {
+  VALID
+  USED
+}
+
+// ───────────────────────────── Auth ─────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          Role      @default(VISITOR)
+  phone         String?
+  city          String?
+  bio           String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  events        Event[]    @relation("OrganizerEvents")
+  orders        Order[]
+  favorites     Favorite[]
+  uploads       Upload[]
+  checkIns      Ticket[]   @relation("CheckedInBy")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ──────────────────────────── Domain ────────────────────────────
+
+model Event {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  title        String
+  summary      String
+  description  String
+  category     Category
+  city         String
+  venueName    String
+  venueAddress String
+  startsAt     DateTime
+  endsAt       DateTime
+  coverUrl     String?
+  status       EventStatus @default(DRAFT)
+  featured     Boolean     @default(false)
+  /// Denormalized lowest ticket price (KZT) for catalog filtering/sorting.
+  minPrice     Int?
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  organizerId  String
+  organizer    User        @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  ticketTypes  TicketType[]
+  program      ProgramItem[]
+  orders       Order[]
+  tickets      Ticket[]
+  favorites    Favorite[]
+
+  @@index([status, startsAt])
+  @@index([organizerId])
+  @@index([city])
+  @@index([category])
+}
+
+model ProgramItem {
+  id          String  @id @default(cuid())
+  eventId     String
+  event       Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  time        String  // "19:30" local time
+  title       String
+  description String?
+  position    Int
+
+  @@index([eventId, position])
+}
+
+model TicketType {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  /// Price in whole tenge.
+  price       Int
+  /// Total capacity for this ticket type.
+  quantity    Int
+  /// Tickets already sold. Invariant 0 <= sold <= quantity (conditional UPDATE + CHECK constraint).
+  sold        Int      @default(0)
+  maxPerOrder Int      @default(10)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+  tickets     Ticket[]
+
+  @@index([eventId, position])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  /// Human friendly reference shown to customers, e.g. EH-7KQ2M9.
+  number         String      @unique
+  /// Client-generated key: repeated submissions of one checkout map to one order.
+  idempotencyKey String      @unique
+  status         OrderStatus @default(PAID)
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  buyerName      String
+  buyerEmail     String
+  buyerPhone     String
+  subtotal       Int
+  serviceFee     Int
+  total          Int
+  /// Last 4 digits of the test card, for display only.
+  cardLast4      String
+  createdAt      DateTime    @default(now())
+  paidAt         DateTime?
+
+  items          OrderItem[]
+  tickets        Ticket[]
+
+  @@index([userId, createdAt])
+  @@index([eventId, createdAt])
+}
+
+model OrderItem {
+  id           String     @id @default(cuid())
+  orderId      String
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  name         String     // snapshot of ticket type name
+  unitPrice    Int        // snapshot of price at purchase time
+  quantity     Int
+
+  @@index([orderId])
+}
+
+model Ticket {
+  id            String       @id @default(cuid())
+  /// Opaque random code encoded in the QR. Contains no personal data.
+  code          String       @unique
+  status        TicketStatus @default(VALID)
+  orderId       String
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventId       String
+  event         Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketTypeId  String
+  ticketType    TicketType   @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  checkedInAt   DateTime?
+  checkedInById String?
+  checkedInBy   User?        @relation("CheckedInBy", fields: [checkedInById], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+
+  @@index([orderId])
+  @@index([eventId])
+}
+
+model Favorite {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, eventId])
+  @@index([eventId])
+}
+
+/// Organizer-uploaded cover images. Stored in Postgres so they survive restarts
+/// without extra infrastructure (see README: Limitations).
+model Upload {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+}
