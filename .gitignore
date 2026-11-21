@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next
+out
+build
+next-env.d.ts
+*.tsbuildinfo
+
+# Generated Prisma client (recreated by `npm install` / `prisma generate`)
+src/generated
+
+# Environment and secrets — only .env.example is committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Tests and reports
+coverage
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors and tools
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.swp
+.claude
+
+# Deployment
+.vercel
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
